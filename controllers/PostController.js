@@ -1,5 +1,23 @@
 import PostModel from "../models/Post.js";
 
+export const getLastTags = async (req, res) => {
+  try {
+    const posts = await PostModel.find().limit(5).exec();
+
+    const tags = posts
+      .map((obj) => obj.tags)
+      .flat()
+      .slice(0, 5);
+
+    res.json(tags);
+  } catch (err) {
+    console.log(500);
+    res.status(500).json({
+      messgae: "Failed to get tags",
+    });
+  }
+};
+
 export const getAll = async (req, res) => {
   try {
     const posts = await PostModel.find().populate("user").exec();
@@ -24,19 +42,20 @@ export const getOne = async (req, res) => {
         },
       },
       {
-        returnDocument: "after",
+        new: true,
       },
-    );
+    ).populate("user");
 
     if (!doc) {
       return res.status(404).json({
-        message: "The post is not found.",
+        message: "Статья не найдена",
       });
     }
 
     res.json(doc);
   } catch (err) {
     console.log(err);
+
     res.status(500).json({
       message: "Failed to get post",
     });
