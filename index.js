@@ -3,6 +3,7 @@ import fs from "fs";
 import mongoose from "mongoose";
 import multer from "multer";
 import cors from "cors";
+import dotenv from "dotenv";
 
 import { reqisterValidation } from "./validations/auth.js";
 import { loginValidation } from "./validations/login.js";
@@ -20,6 +21,8 @@ import { checkAuth, handleValidationErrors } from "./utils/index.js";
 // } from "./controllers/PostController.js";
 
 import { UserController, PostController } from "./controllers/index.js";
+
+dotenv.config();
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -77,6 +80,7 @@ app.get("/tags", PostController.getLastTags);
 
 app.get("/posts", PostController.getAll);
 app.get("/posts/tags", PostController.getLastTags);
+app.get("/posts/sorted", PostController.getSorted);
 app.get("/posts/:id", PostController.getOne);
 app.post("/posts", checkAuth, postCreateValidation, PostController.create);
 app.delete("/posts/:id", checkAuth, PostController.remove);
