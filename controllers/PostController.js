@@ -1,4 +1,5 @@
 import PostModel from "../models/Post.js";
+import { PostController } from "./index.js";
 
 export const getLastTags = async (req, res) => {
   try {
@@ -13,7 +14,7 @@ export const getLastTags = async (req, res) => {
   } catch (err) {
     console.log(500);
     res.status(500).json({
-      messgae: "Failed to get tags",
+      message: "Failed to get tags",
     });
   }
 };
@@ -58,6 +59,32 @@ export const getOne = async (req, res) => {
 
     res.status(500).json({
       message: "Failed to get post",
+    });
+  }
+};
+
+export const getSorted = async (req, res) => {
+  try {
+    const sortBy = req.query.sort;
+
+    if (sortBy === "top") {
+      const sortedPosts = await PostModel.find().sort({ viewsCount: -1 });
+      return res.json(sortedPosts);
+    }
+
+    if (sortBy === "recent") {
+      const sortedPosts = await PostModel.find().sort({ createdAt: -1 });
+      return res.json(sortedPosts);
+    }
+
+    res.status(400).json({
+      message: "Unknown sorting type",
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      message: "Failed to get sorted posts",
     });
   }
 };
