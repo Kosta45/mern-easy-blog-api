@@ -1,24 +1,16 @@
 import express from "express";
-import fs from "fs";
 import mongoose from "mongoose";
 import multer from "multer";
 import cors from "cors";
 import dotenv from "dotenv";
+import { Readable } from "stream";
+import cloudinary from "./utils/cloudinary.js";
 
 import { reqisterValidation } from "./validations/auth.js";
 import { loginValidation } from "./validations/login.js";
 import { postCreateValidation } from "./validations/post.js";
 
 import { checkAuth, handleValidationErrors } from "./utils/index.js";
-
-// import { register, login, getMe } from "./controllers/UserController.js";
-// import {
-//   create,
-//   getAll,
-//   getOne,
-//   remove,
-//   update,
-// } from "./controllers/PostController.js";
 
 import { UserController, PostController } from "./controllers/index.js";
 
@@ -35,23 +27,12 @@ mongoose
 
 const app = express();
 
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => {
-    if (!fs.existsSync("uploads")) {
-      fs.mkdirSync("uploads");
-    }
-    cb(null, "uploads");
-  },
-  filename: (_, file, cb) => {
-    cb(null, file.originalname);
-  },
+const upload = multer({
+  storage: multer.memoryStorage(),
 });
-
-const upload = multer({ storage });
 
 app.use(express.json());
 app.use(cors());
-app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -70,10 +51,31 @@ app.post(
 );
 app.get("/auth/me", checkAuth, UserController.getMe);
 
-app.post("/upload", checkAuth, upload.single("image"), (req, res) => {
-  res.json({
-    url: `/uploads/${req.file.originalname}`,
-  });
+app.post("/upload", checkAuth, upload.single("image"), async (req, res) => {
+  try {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: "posts",
+      },
+      (error, result) => {
+        if (error) {
+          return res.status(500).json(error);
+        }
+
+        res.json({
+          url: result.secure_url,
+        });
+      },
+    );
+
+    Readable.from(req.file.buffer).pipe(uploadStream);
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      message: "Upload failed",
+    });
+  }
 });
 
 app.get("/tags", PostController.getLastTags);
